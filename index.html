@@ -427,11 +427,23 @@ const DEFAULT_STATE = () => ({
   grades: {},             // courseId -> [{id, name, weight, score, outOf}]
 });
 
+const STATE_VERSION = 2;
 let S = Store.get('unihub_v1', null);
-if (!S) {
-  S = DEFAULT_STATE();
-  S.events = UC_DATES_2026.map(e => ({ id: uid(), locked:true, ...e }));
-  Store.set('unihub_v1', S);
+if (!S) S = DEFAULT_STATE();
+migrateState(S);
+
+/* Runs on every load: upgrades data saved by ANY older version of the app
+   so updates never break or lose a user's existing data. */
+function migrateState(s){
+  const d = DEFAULT_STATE();
+  // add any top-level collections / settings introduced in newer versions
+  for (const k of Object.keys(d)) if (s[k] === undefined) s[k] = d[k];
+  for (const k of Object.keys(d.settings)) if (s.settings[k] === undefined) s.settings[k] = d.settings[k];
+  // refresh official UC key dates to this release's list (user's own events untouched)
+  s.events = (s.events || []).filter(e => !e.locked);
+  UC_DATES_2026.forEach(e => s.events.push({id: uid(), locked: true, ...e}));
+  s.version = STATE_VERSION;
+  Store.set('unihub_v1', s);
 }
 function save(){ Store.set('unihub_v1', S); }
 
@@ -523,77 +535,6 @@ function renderSemChip(){
   $('#sem-chip').innerHTML = `<b>${esc(si.label)}</b>${si.detail? '<br>'+esc(si.detail):''}<br><span style="color:var(--text3)">UC · 2026</span>`;
 }
 
-/* ---------- Demo data ---------- */
-function loadDemoData(){
-  const mk = (code,name,i) => ({id:uid(), code, name, color:COURSE_COLORS[i%COURSE_COLORS.length]});
-  const c1 = mk('COSC121','Introduction to Computer Programming',0);
-  const c2 = mk('MATH120','Discrete Mathematics',1);
-  const c3 = mk('STAT101','Statistics 1',2);
-  const c4 = mk('PHIL139','Ethics, Happiness and the Good Life',3);
-  S.courses.push(c1,c2,c3,c4);
-  const tt = [ // day: 0=Mon … 4=Fri
-    [c1.id,0,'09:00','10:00','Lecture','C1 Central'],
-    [c1.id,2,'09:00','10:00','Lecture','C1 Central'],
-    [c1.id,3,'14:00','16:00','Lab','Jack Erskine 038'],
-    [c2.id,0,'11:00','12:00','Lecture','A2 Ōtākaro'],
-    [c2.id,1,'11:00','12:00','Lecture','A2 Ōtākaro'],
-    [c2.id,3,'10:00','11:00','Tutorial','Jack Erskine 240'],
-    [c3.id,1,'13:00','14:00','Lecture','Meremere 108'],
-    [c3.id,4,'13:00','14:00','Lecture','Meremere 108'],
-    [c3.id,2,'15:00','16:00','Lab','Rehua 329'],
-    [c4.id,1,'16:00','17:00','Lecture','North Arts NA1'],
-    [c4.id,4,'09:00','10:00','Tutorial','Karl Popper 508'],
-  ];
-  tt.forEach(([courseId,day,start,end,type,location]) => S.timetable.push({id:uid(), courseId, day, start, end, type, location}));
-  const ev = [
-    ['2026-07-24','Lab 1 due', 'deadline', c1.id],
-    ['2026-07-31','Assignment 1 due', 'deadline', c2.id],
-    ['2026-08-07','Quiz 1 (in lecture)', 'exam', c3.id],
-    ['2026-08-14','Essay draft due', 'deadline', c4.id],
-    ['2026-08-21','Test 1 · 7pm E7', 'exam', c1.id],
-  ];
-  ev.forEach(([date,title,type,courseId]) => S.events.push({id:uid(), date, title, type, courseId}));
-  const tk = [
-    ['Finish Lab 1 exercises', c1.id, '2026-07-23', 'high', 'doing', 3],
-    ['Read chapter 2 — proofs', c2.id, '2026-07-20', 'med', 'todo', 2],
-    ['Set up RStudio', c3.id, '2026-07-15', 'low', 'todo', 1],
-    ['Pick essay topic', c4.id, '2026-07-27', 'med', 'todo', 1],
-    ['Join study group', null, null, 'low', 'done', null],
-  ];
-  tk.forEach(([title,courseId,due,priority,status,est]) => S.tasks.push({id:uid(), title, courseId, due, priority, status, est, notes:''}));
-  S.notes.push({
-    id:uid(), title:'COSC121 — Week 1 notes', icon:'💻', courseId:c1.id, updated:Date.now(),
-    blocks:[
-      {id:uid(), type:'h1', text:'Variables & types'},
-      {id:uid(), type:'text', text:'Java is statically typed — every variable has a declared type.'},
-      {id:uid(), type:'bullet', text:'int, double, boolean, char are primitives'},
-      {id:uid(), type:'bullet', text:'String is an object type'},
-      {id:uid(), type:'h2', text:'To do before the lab'},
-      {id:uid(), type:'todo', text:'Install BlueJ', checked:true},
-      {id:uid(), type:'todo', text:'Finish practice exercises 1–5', checked:false},
-    ]
-  });
-  S.notes.push({
-    id:uid(), title:'Flat & life admin', icon:'🏠', courseId:null, updated:Date.now(),
-    blocks:[
-      {id:uid(), type:'todo', text:'Sort bus card (Metrocard)', checked:false},
-      {id:uid(), type:'todo', text:'Book health centre enrolment', checked:false},
-      {id:uid(), type:'text', text:'Power bill is split 4 ways, due the 20th.'},
-    ]
-  });
-  S.grades[c1.id] = [
-    {id:uid(), name:'Lab 1', weight:5, score:9, outOf:10},
-    {id:uid(), name:'Test 1', weight:20, score:null, outOf:100},
-    {id:uid(), name:'Assignment 1', weight:15, score:null, outOf:100},
-    {id:uid(), name:'Final exam', weight:60, score:null, outOf:100},
-  ];
-  S.grades[c3.id] = [
-    {id:uid(), name:'Quiz 1', weight:10, score:null, outOf:20},
-    {id:uid(), name:'Project', weight:30, score:null, outOf:100},
-    {id:uid(), name:'Final exam', weight:60, score:null, outOf:100},
-  ];
-  save();
-}
 </script>
 <script>
 /* ============================================================ DASHBOARD */
@@ -624,8 +565,8 @@ function renderDashboard(){
       <p>${now.toLocaleDateString('en-NZ',{weekday:'long', day:'numeric', month:'long'})} · ${esc(si.label)}${si.detail? ' · '+esc(si.detail):''}</p>
     </div>
     <div style="display:flex;gap:8px">
-      ${noData ? `<button class="btn btn-primary" onclick="loadDemoData();render('dashboard');toast('Demo data loaded — explore away!')">✨ Load demo data</button>`:''}
-      <button class="btn btn-ghost" onclick="show('settings')">+ Add course</button>
+      ${noData ? `<button class="btn btn-primary" onclick="show('settings');openCourseModal()">🎓 Set up your courses</button>`
+                : `<button class="btn btn-ghost" onclick="show('settings')">+ Add course</button>`}
     </div>
   </div>
   <div class="stat-row">
@@ -1366,7 +1307,6 @@ function renderSettings(){
         <div class="card card-pad">
           <h3>⚠️ Danger zone</h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="loadDemoData();render('settings');toast('Demo data added')">Load demo data</button>
             <button class="btn btn-danger btn-sm" onclick="confirmReset()">Reset everything</button>
           </div>
         </div>
@@ -1432,7 +1372,7 @@ function importData(input){
     try {
       const data = JSON.parse(r.result);
       if (!data.courses || !data.settings) throw new Error('bad file');
-      S = data; save(); applyTheme(); render(currentView); toast('Backup imported ✓');
+      S = data; migrateState(S); applyTheme(); render(currentView); toast('Backup imported ✓');
     } catch(e){ toast('That file doesn’t look like a UniHub backup'); }
   };
   r.readAsText(f); input.value = '';

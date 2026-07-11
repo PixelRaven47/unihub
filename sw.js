@@ -1,5 +1,5 @@
 /* UniHub service worker — offline-first for the app shell */
-const CACHE = 'unihub-v1';
+const CACHE = 'unihub-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
