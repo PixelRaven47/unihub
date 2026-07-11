@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniHub — UC Canterbury Student Companion</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="UniHub">
+<meta name="description" content="All-in-one University of Canterbury student companion: timetable, deadlines, notes, grades and campus map. Your data stays on your device.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<style>
+:root{
+  --bg:#f6f7fb; --panel:#ffffff; --panel2:#f0f2f8; --border:#e4e7f0;
+  --text:#1a2033; --text2:#5a6379; --text3:#8b93a7;
+  --accent:#4f46e5; --accent-soft:#eef0fe; --accent2:#0ea5a4;
+  --red:#dc3545; --red-soft:#fdecee; --amber:#d97706; --amber-soft:#fdf3e3;
+  --green:#16a34a; --green-soft:#e8f7ee; --uc:#c8102e; --uc-soft:#fbe9ec;
+  --shadow:0 1px 3px rgba(20,25,50,.07),0 8px 24px -12px rgba(20,25,50,.12);
+  --shadow-lg:0 4px 12px rgba(20,25,50,.08),0 20px 50px -20px rgba(20,25,50,.25);
+  --radius:14px; --radius-sm:9px;
+  --sidebar-w:232px;
+}
+[data-theme="dark"]{
+  --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --border:#2a2f3e;
+  --text:#e8eaf2; --text2:#a3aabc; --text3:#6d7488;
+  --accent:#818cf8; --accent-soft:#26293f; --accent2:#2dd4bf;
+  --red:#f0596a; --red-soft:#3a222a; --amber:#f5a623; --amber-soft:#38301e;
+  --green:#4ade80; --green-soft:#1e3328; --uc:#f05a70; --uc-soft:#3a2028;
+  --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.4);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.4),0 20px 50px -20px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  background:var(--bg); color:var(--text); font-size:14.5px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit;color:var(--text)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:9px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--text3);border:2px solid transparent;background-clip:content-box}
+
+/* ===== Layout ===== */
+#app{display:flex;height:100vh}
+#sidebar{
+  width:var(--sidebar-w);flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:14px 10px;gap:2px;z-index:40;transition:margin-left .25s;
+}
+#sidebar.collapsed{margin-left:calc(-1 * var(--sidebar-w))}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 16px}
+.brand-logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0}
+.brand h1{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.brand span{display:block;font-size:10.5px;color:var(--text3);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:var(--radius-sm);
+  color:var(--text2);font-weight:600;font-size:13.5px;width:100%;text-align:left;transition:background .12s,color .12s;
+}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.nav-item:hover{background:var(--panel2);color:var(--text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent)}
+.nav-sep{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);padding:14px 12px 5px}
+#sidebar .foot{margin-top:auto;padding:8px 6px 2px;display:flex;flex-direction:column;gap:6px}
+.sem-chip{font-size:11.5px;color:var(--text2);background:var(--panel2);border-radius:8px;padding:7px 10px;line-height:1.35}
+.sem-chip b{color:var(--text)}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{
+  height:56px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 20px;
+  background:var(--panel);border-bottom:1px solid var(--border);
+}
+#topbar h2{font-size:16.5px;font-weight:750;letter-spacing:-.2px}
+.icon-btn{
+  width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--text2);transition:background .12s;flex-shrink:0;
+}
+.icon-btn:hover{background:var(--panel2);color:var(--text)}
+.icon-btn svg{width:18px;height:18px}
+#viewport{flex:1;overflow-y:auto;padding:22px 24px 60px;scroll-behavior:smooth}
+.view{display:none;max-width:1180px;margin:0 auto}
+.view.active{display:block;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ===== Shared components ===== */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:18px 20px}
+.card h3{font-size:14px;font-weight:750;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3 .spacer{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:var(--radius-sm);
+  font-weight:650;font-size:13px;transition:filter .12s,background .12s;white-space:nowrap;
+}
+.btn svg{width:15px;height:15px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--panel2);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);background:var(--border)}
+.btn-danger{background:var(--red-soft);color:var(--red)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.empty{
+  text-align:center;padding:36px 20px;color:var(--text3);font-size:13.5px;
+}
+.empty .big{font-size:30px;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+input.field,select.field,textarea.field{
+  width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 11px;font-size:13.5px;outline:none;transition:border .12s;
+}
+input.field:focus,select.field:focus,textarea.field:focus{border-color:var(--accent)}
+label.flabel{display:block;font-size:11.5px;font-weight:700;color:var(--text2);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+
+/* Modal */
+#modal-overlay{
+  position:fixed;inset:0;background:rgba(10,14,28,.5);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+#modal-overlay.open{display:flex}
+#modal{
+  background:var(--panel);border-radius:16px;box-shadow:var(--shadow-lg);border:1px solid var(--border);
+  width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:22px 24px;animation:pop .18s ease;
+}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+#modal h3{font-size:16px;font-weight:750;margin-bottom:4px}
+#modal .sub{font-size:12.5px;color:var(--text3);margin-bottom:8px}
+#modal .row{display:flex;gap:10px}
+#modal .row>div{flex:1}
+#modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.swatch{width:26px;height:26px;border-radius:8px;border:2px solid transparent;transition:transform .1s}
+.swatch.sel{border-color:var(--text);transform:scale(1.12)}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--text);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:650;font-size:13px;
+  transition:transform .25s;z-index:200;box-shadow:var(--shadow-lg);
+}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ===== Dashboard ===== */
+.dash-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.dash-hero h2{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.dash-hero p{color:var(--text2);font-size:13.5px}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:900px){.stat-row{grid-template-columns:1fr 1fr}}
+.stat{padding:14px 16px}
+.stat .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.stat .lbl{font-size:12px;color:var(--text3);font-weight:650}
+.today-item{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);align-items:center}
+.today-item:last-child{border-bottom:none}
+.today-time{font-weight:750;font-size:12.5px;color:var(--text2);width:80px;flex-shrink:0}
+.today-bar{width:4px;align-self:stretch;border-radius:4px}
+.deadline-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:center}
+.deadline-item:last-child{border-bottom:none}
+.dl-count{font-size:11px;font-weight:800;padding:3px 8px;border-radius:7px;flex-shrink:0;min-width:52px;text-align:center}
+.focus-timer{text-align:center;padding:6px 0 2px}
+.focus-timer .time{font-size:38px;font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums}
+.focus-timer .controls{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.quick-links{display:flex;flex-direction:column;gap:6px}
+.quick-links a{
+  display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:var(--radius-sm);text-decoration:none;
+  color:var(--text2);font-weight:600;font-size:13px;background:var(--panel2);transition:background .12s;
+}
+.quick-links a:hover{background:var(--border);color:var(--text)}
+
+/* ===== Timetable ===== */
+.tt-wrap{overflow-x:auto}
+.tt-grid{display:grid;grid-template-columns:52px repeat(5,minmax(130px,1fr));min-width:740px;position:relative}
+.tt-grid.weekend{grid-template-columns:52px repeat(7,minmax(110px,1fr));min-width:900px}
+.tt-head{position:sticky;top:0;background:var(--panel);z-index:5;padding:10px 6px;text-align:center;font-weight:750;font-size:12.5px;border-bottom:1.5px solid var(--border);color:var(--text2)}
+.tt-head.today{color:var(--accent)}
+.tt-hour{font-size:11px;color:var(--text3);text-align:right;padding-right:8px;transform:translateY(-6px);font-weight:600}
+.tt-cell{border-bottom:1px solid var(--border);border-left:1px solid var(--border);height:52px;position:relative}
+.tt-col{position:relative}
+.tt-class{
+  position:absolute;left:3px;right:3px;border-radius:8px;padding:5px 8px;overflow:hidden;cursor:pointer;
+  font-size:11.5px;line-height:1.3;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.14);transition:filter .1s;z-index:2;
+}
+.tt-class:hover{filter:brightness(1.08)}
+.tt-class b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-class .loc{opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.now-line{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none}
+.now-line::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+
+/* ===== Calendar ===== */
+.cal-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.cal-toolbar h3{font-size:17px;font-weight:800;min-width:150px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-dow{text-align:center;font-size:11.5px;font-weight:750;color:var(--text3);padding:4px 0;text-transform:uppercase;letter-spacing:.5px}
+.cal-day{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;min-height:92px;padding:6px 7px;
+  cursor:pointer;transition:border .12s;position:relative;overflow:hidden;
+}
+.cal-day:hover{border-color:var(--accent)}
+.cal-day.other{opacity:.42}
+.cal-day .dnum{font-size:12px;font-weight:750;color:var(--text2);margin-bottom:3px}
+.cal-day.today .dnum{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.cal-ev{font-size:10.5px;font-weight:650;padding:1.5px 6px;border-radius:5px;margin-bottom:2.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-more{font-size:10px;color:var(--text3);font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--text2);font-weight:600}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* ===== Tasks ===== */
+.task-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:950px){.task-board{grid-template-columns:1fr}}
+.task-col-head{display:flex;align-items:center;gap:8px;font-weight:750;font-size:13px;margin-bottom:10px;color:var(--text2)}
+.task-col-head .cnt{background:var(--panel2);border-radius:7px;padding:1px 8px;font-size:11.5px}
+.task-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:9px;
+  cursor:pointer;transition:box-shadow .12s,transform .12s;box-shadow:var(--shadow);
+}
+.task-card:hover{transform:translateY(-1px);box-shadow:var(--shadow-lg)}
+.task-card .t-title{font-weight:700;font-size:13.5px;margin-bottom:5px}
+.task-card .t-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.prio{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.4px}
+.prio-high{background:var(--red-soft);color:var(--red)}
+.prio-med{background:var(--amber-soft);color:var(--amber)}
+.prio-low{background:var(--green-soft);color:var(--green)}
+.due-chip{font-size:11px;font-weight:700;color:var(--text3)}
+.due-chip.overdue{color:var(--red)}
+.due-chip.soon{color:var(--amber)}
+
+/* ===== Notes ===== */
+.notes-layout{display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start}
+@media(max-width:850px){.notes-layout{grid-template-columns:1fr}}
+.note-list-item{
+  display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:var(--radius-sm);cursor:pointer;
+  font-weight:600;font-size:13px;color:var(--text2);transition:background .12s;
+}
+.note-list-item:hover{background:var(--panel2)}
+.note-list-item.active{background:var(--accent-soft);color:var(--accent)}
+.note-list-item .ic{font-size:15px}
+.note-editor{min-height:480px;padding:26px 30px}
+.note-title-input{
+  width:100%;border:none;background:none;font-size:26px;font-weight:800;letter-spacing:-.5px;outline:none;
+  color:var(--text);margin-bottom:4px;
+}
+.block{display:flex;gap:8px;align-items:flex-start;padding:2px 0;position:relative;border-radius:6px}
+.block:hover .block-handle{opacity:1}
+.block-handle{
+  opacity:0;transition:opacity .1s;color:var(--text3);cursor:pointer;font-size:14px;line-height:1.6;
+  width:20px;text-align:center;flex-shrink:0;user-select:none;border-radius:5px;
+}
+.block-handle:hover{background:var(--panel2);color:var(--text)}
+.block-content{flex:1;outline:none;min-height:1.5em;word-break:break-word}
+.block-content:empty::before{content:attr(data-ph);color:var(--text3);pointer-events:none}
+.block-h1 .block-content{font-size:21px;font-weight:800;letter-spacing:-.3px;margin-top:8px}
+.block-h2 .block-content{font-size:16.5px;font-weight:750;margin-top:5px}
+.block-bullet .block-content::before{content:none}
+.block-bullet{padding-left:4px}
+.block-bullet .bullet-dot{color:var(--text2);line-height:1.6;flex-shrink:0}
+.block-todo input[type=checkbox]{margin-top:5px;accent-color:var(--accent);width:15px;height:15px;flex-shrink:0}
+.block-todo.done .block-content{text-decoration:line-through;color:var(--text3)}
+.block-divider{padding:8px 0}
+.block-divider hr{border:none;border-top:1.5px solid var(--border);width:100%}
+.block-add-bar{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+
+/* ===== Grades ===== */
+.grade-course{margin-bottom:16px}
+.grade-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.grade-big{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.gbar{height:9px;background:var(--panel2);border-radius:9px;overflow:hidden;margin:10px 0 4px}
+.gbar>div{height:100%;border-radius:9px;transition:width .4s}
+table.gtable{width:100%;border-collapse:collapse;margin-top:10px}
+table.gtable th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--border)}
+table.gtable td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
+table.gtable input{width:70px;text-align:center;padding:4px 6px}
+
+/* ===== Map ===== */
+.map-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+@media(max-width:950px){.map-layout{grid-template-columns:1fr}}
+.map-dir{max-height:640px;overflow-y:auto}
+.poi-item{display:flex;gap:10px;padding:9px 11px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s;align-items:flex-start}
+.poi-item:hover,.poi-item.sel{background:var(--accent-soft)}
+.poi-item .poi-ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.poi-item b{font-size:13px;display:block}
+.poi-item small{color:var(--text3);font-size:11.5px;line-height:1.35;display:block}
+.map-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.map-filters .chip{cursor:pointer;border:1px solid var(--border);background:var(--panel);color:var(--text2)}
+.map-filters .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+#campus-svg{width:100%;height:auto;border-radius:12px;display:block}
+.bldg{cursor:pointer;transition:filter .12s}
+.bldg:hover{filter:brightness(1.12)}
+.bldg.hl rect,.bldg.hl path{stroke:var(--uc);stroke-width:3;animation:pulse 1.2s ease infinite}
+@keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.3}}
+.map-info{margin-top:12px}
+
+/* ===== Settings ===== */
+.course-row{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.course-row:last-child{border-bottom:none}
+.course-badge{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0}
+
+@media(max-width:768px){
+  #sidebar{position:fixed;top:0;bottom:0;left:0;box-shadow:var(--shadow-lg)}
+  #viewport{padding:16px 14px 60px}
+}
+@media print{#sidebar,#topbar{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">U</div>
+      <div><h1>UniHub</h1><span>UC Canterbury</span></div>
+    </div>
+    <button class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard</button>
+    <button class="nav-item" data-view="timetable">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Timetable</button>
+    <button class="nav-item" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M8 2v4M16 2v4M3 9.5h18"/></svg>
+      Calendar</button>
+    <button class="nav-item" data-view="tasks">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 5.5l1 1 2-2M4 11.5l1 1 2-2M4 17.5l1 1 2-2"/></svg>
+      Tasks &amp; Planner</button>
+    <button class="nav-item" data-view="notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/></svg>
+      Notes</button>
+    <button class="nav-item" data-view="grades">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Grades</button>
+    <button class="nav-item" data-view="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l-6 3V6l6-3 6 3 6-3v15l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg>
+      Campus Map</button>
+    <div class="nav-sep">Manage</div>
+    <button class="nav-item" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h0a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h0a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v0a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
+      Courses &amp; Settings</button>
+    <div class="foot">
+      <div class="sem-chip" id="sem-chip"></div>
+    </div>
+  </aside>
+  <div id="main">
+    <div id="topbar">
+      <button class="icon-btn" id="menu-btn" title="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h2 id="view-title">Dashboard</h2>
+      <div style="flex:1"></div>
+      <button class="icon-btn" id="theme-btn" title="Toggle dark mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+    <div id="viewport">
+      <div class="view active" id="view-dashboard"></div>
+      <div class="view" id="view-timetable"></div>
+      <div class="view" id="view-calendar"></div>
+      <div class="view" id="view-tasks"></div>
+      <div class="view" id="view-notes"></div>
+      <div class="view" id="view-grades"></div>
+      <div class="view" id="view-map"></div>
+      <div class="view" id="view-settings"></div>
+    </div>
+  </div>
+</div>
+<div id="modal-overlay"><div id="modal"></div></div>
+<div id="toast"></div>
+<script>
+/* ============================================================
+   UniHub — local-first university companion
+   Storage: localStorage when available, in-memory fallback.
+   ============================================================ */
+'use strict';
+
+/* ---------- Safe storage ---------- */
+const Store = (() => {
+  let ok = false; const mem = {};
+  try { localStorage.setItem('__uh_t','1'); localStorage.removeItem('__uh_t'); ok = true; } catch(e){}
+  return {
+    persistent: ok,
+    get(k, d){ if(ok){ try{ const v = localStorage.getItem(k); if(v!==null) return JSON.parse(v);}catch(e){} } return (k in mem)? mem[k] : d; },
+    set(k, v){ if(ok){ try{ localStorage.setItem(k, JSON.stringify(v)); return; }catch(e){} } mem[k]=v; }
+  };
+})();
+
+/* ---------- UC Canterbury 2026 key dates (source: canterbury.ac.nz) ---------- */
+const UC_DATES_2026 = [
+  {date:'2026-02-06', title:'Waitangi Day (uni closed)', type:'uc'},
+  {date:'2026-02-16', title:'Semester 1 lectures begin', type:'uc'},
+  {date:'2026-03-28', title:'Mid-semester break begins (to 19 Apr)', type:'uc'},
+  {date:'2026-04-03', title:'Good Friday', type:'uc'},
+  {date:'2026-04-06', title:'Easter Monday', type:'uc'},
+  {date:'2026-04-14', title:'Autumn Graduation (14–16 Apr)', type:'uc'},
+  {date:'2026-04-20', title:'S1 lectures resume', type:'uc'},
+  {date:'2026-04-27', title:'ANZAC Day (observed)', type:'uc'},
+  {date:'2026-05-29', title:'Semester 1 lectures end', type:'uc'},
+  {date:'2026-06-01', title:"King's Birthday", type:'uc'},
+  {date:'2026-06-08', title:'S1 exams begin (8–20 Jun)', type:'uc'},
+  {date:'2026-06-20', title:'S1 exams end', type:'uc'},
+  {date:'2026-07-06', title:'S1 results released', type:'uc'},
+  {date:'2026-07-10', title:'Matariki', type:'uc'},
+  {date:'2026-07-13', title:'Semester 2 lectures begin', type:'uc'},
+  {date:'2026-08-22', title:'Mid-semester break begins (to 6 Sep)', type:'uc'},
+  {date:'2026-09-07', title:'S2 lectures resume', type:'uc'},
+  {date:'2026-10-16', title:'Semester 2 lectures end', type:'uc'},
+  {date:'2026-10-26', title:'Labour Day', type:'uc'},
+  {date:'2026-10-27', title:'S2 exams begin (27 Oct–7 Nov)', type:'uc'},
+  {date:'2026-11-07', title:'S2 exams end', type:'uc'},
+  {date:'2026-11-13', title:'Canterbury Show Day', type:'uc'},
+  {date:'2026-11-30', title:'S2 results released', type:'uc'},
+];
+
+const COURSE_COLORS = ['#4f46e5','#0ea5a4','#dc6b2f','#c026d3','#2563eb','#16a34a','#e11d48','#a16207','#7c3aed','#0891b2'];
+
+/* ---------- State ---------- */
+const DEFAULT_STATE = () => ({
+  version: 1,
+  settings: { name:'', theme:'light', weekend:false, seededUC:true },
+  courses: [],            // {id, code, name, color}
+  timetable: [],          // {id, courseId, day:0-6, start:'HH:MM', end:'HH:MM', type, location}
+  events: [],             // {id, date:'YYYY-MM-DD', title, type: deadline|exam|personal|uc, courseId?, time?}
+  tasks: [],              // {id, title, courseId?, due?, priority, status, est?, notes}
+  notes: [],              // {id, title, icon, courseId?, updated, blocks:[{id,type,text,checked}]}
+  grades: {},             // courseId -> [{id, name, weight, score, outOf}]
+});
+
+let S = Store.get('unihub_v1', null);
+if (!S) {
+  S = DEFAULT_STATE();
+  S.events = UC_DATES_2026.map(e => ({ id: uid(), locked:true, ...e }));
+  Store.set('unihub_v1', S);
+}
+function save(){ Store.set('unihub_v1', S); }
+
+/* ---------- Utils ---------- */
+function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function $(sel, root){ return (root||document).querySelector(sel); }
+function $$(sel, root){ return Array.from((root||document).querySelectorAll(sel)); }
+function todayStr(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseDate(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); }
+function fmtDate(s, opts){ return parseDate(s).toLocaleDateString('en-NZ', opts || {day:'numeric', month:'short'}); }
+function daysUntil(s){ const ms = parseDate(s) - parseDate(todayStr()); return Math.round(ms/86400000); }
+function timeToMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function fmtTime(t){ let [h,m] = t.split(':').map(Number); const ap = h>=12?'pm':'am'; h = h%12||12; return h + (m?':'+String(m).padStart(2,'0'):'') + ap; }
+function course(id){ return S.courses.find(c => c.id === id); }
+function courseColor(id){ const c = course(id); return c ? c.color : '#8b93a7'; }
+function courseCode(id){ const c = course(id); return c ? c.code : ''; }
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---------- Modal ---------- */
+function openModal(html){ $('#modal').innerHTML = html; $('#modal-overlay').classList.add('open'); }
+function closeModal(){ $('#modal-overlay').classList.remove('open'); }
+$('#modal-overlay').addEventListener('mousedown', e => { if (e.target.id === 'modal-overlay') closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function courseOptions(sel, allowNone){
+  return (allowNone ? `<option value="">— none —</option>` : '') +
+    S.courses.map(c => `<option value="${c.id}" ${sel===c.id?'selected':''}>${esc(c.code)} · ${esc(c.name)}</option>`).join('');
+}
+
+/* ---------- Semester awareness ---------- */
+function semesterInfo(){
+  const t = todayStr();
+  const periods = [
+    {label:'Semester 1', start:'2026-02-16', end:'2026-05-29', kind:'teaching'},
+    {label:'S1 exam period', start:'2026-06-08', end:'2026-06-20', kind:'exams'},
+    {label:'Mid-year break', start:'2026-06-21', end:'2026-07-12', kind:'break'},
+    {label:'Semester 2', start:'2026-07-13', end:'2026-10-16', kind:'teaching'},
+    {label:'S2 exam period', start:'2026-10-27', end:'2026-11-07', kind:'exams'},
+  ];
+  for (const p of periods){
+    if (t >= p.start && t <= p.end){
+      // teaching week number
+      if (p.kind === 'teaching'){
+        const wk = Math.floor((parseDate(t) - parseDate(p.start)) / (7*86400000)) + 1;
+        return {label: p.label, detail: 'Week ' + wk, kind: p.kind};
+      }
+      return {label: p.label, detail: '', kind: p.kind};
+    }
+    if (t < p.start){
+      return {label: p.label, detail: 'starts ' + fmtDate(p.start) + ' (' + daysUntil(p.start) + 'd)', kind:'upcoming'};
+    }
+  }
+  return {label:'Summer break', detail:'', kind:'break'};
+}
+
+/* ---------- Router ---------- */
+const VIEW_TITLES = {dashboard:'Dashboard', timetable:'Weekly Timetable', calendar:'Calendar & Deadlines', tasks:'Tasks & Study Planner', notes:'Notes', grades:'Grades', map:'UC Campus Map', settings:'Courses & Settings'};
+let currentView = 'dashboard';
+function show(view){
+  currentView = view;
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view'+'-'+view));
+  $('#view-title').textContent = VIEW_TITLES[view] || '';
+  render(view);
+  $('#viewport').scrollTop = 0;
+  if (window.innerWidth <= 768) $('#sidebar').classList.add('collapsed');
+}
+$$('.nav-item').forEach(b => b.addEventListener('click', () => show(b.dataset.view)));
+$('#menu-btn').addEventListener('click', () => $('#sidebar').classList.toggle('collapsed'));
+
+/* ---------- Theme ---------- */
+function applyTheme(){ document.documentElement.dataset.theme = S.settings.theme; }
+$('#theme-btn').addEventListener('click', () => {
+  S.settings.theme = S.settings.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme();
+});
+
+function render(view){
+  ({dashboard:renderDashboard, timetable:renderTimetable, calendar:renderCalendar,
+    tasks:renderTasks, notes:renderNotes, grades:renderGrades, map:renderMap, settings:renderSettings}[view])();
+  renderSemChip();
+}
+function renderSemChip(){
+  const si = semesterInfo();
+  $('#sem-chip').innerHTML = `<b>${esc(si.label)}</b>${si.detail? '<br>'+esc(si.detail):''}<br><span style="color:var(--text3)">UC · 2026</span>`;
+}
+
+/* ---------- Demo data ---------- */
+function loadDemoData(){
+  const mk = (code,name,i) => ({id:uid(), code, name, color:COURSE_COLORS[i%COURSE_COLORS.length]});
+  const c1 = mk('COSC121','Introduction to Computer Programming',0);
+  const c2 = mk('MATH120','Discrete Mathematics',1);
+  const c3 = mk('STAT101','Statistics 1',2);
+  const c4 = mk('PHIL139','Ethics, Happiness and the Good Life',3);
+  S.courses.push(c1,c2,c3,c4);
+  const tt = [ // day: 0=Mon … 4=Fri
+    [c1.id,0,'09:00','10:00','Lecture','C1 Central'],
+    [c1.id,2,'09:00','10:00','Lecture','C1 Central'],
+    [c1.id,3,'14:00','16:00','Lab','Jack Erskine 038'],
+    [c2.id,0,'11:00','12:00','Lecture','A2 Ōtākaro'],
+    [c2.id,1,'11:00','12:00','Lecture','A2 Ōtākaro'],
+    [c2.id,3,'10:00','11:00','Tutorial','Jack Erskine 240'],
+    [c3.id,1,'13:00','14:00','Lecture','Meremere 108'],
+    [c3.id,4,'13:00','14:00','Lecture','Meremere 108'],
+    [c3.id,2,'15:00','16:00','Lab','Rehua 329'],
+    [c4.id,1,'16:00','17:00','Lecture','North Arts NA1'],
+    [c4.id,4,'09:00','10:00','Tutorial','Karl Popper 508'],
+  ];
+  tt.forEach(([courseId,day,start,end,type,location]) => S.timetable.push({id:uid(), courseId, day, start, end, type, location}));
+  const ev = [
+    ['2026-07-24','Lab 1 due', 'deadline', c1.id],
+    ['2026-07-31','Assignment 1 due', 'deadline', c2.id],
+    ['2026-08-07','Quiz 1 (in lecture)', 'exam', c3.id],
+    ['2026-08-14','Essay draft due', 'deadline', c4.id],
+    ['2026-08-21','Test 1 · 7pm E7', 'exam', c1.id],
+  ];
+  ev.forEach(([date,title,type,courseId]) => S.events.push({id:uid(), date, title, type, courseId}));
+  const tk = [
+    ['Finish Lab 1 exercises', c1.id, '2026-07-23', 'high', 'doing', 3],
+    ['Read chapter 2 — proofs', c2.id, '2026-07-20', 'med', 'todo', 2],
+    ['Set up RStudio', c3.id, '2026-07-15', 'low', 'todo', 1],
+    ['Pick essay topic', c4.id, '2026-07-27', 'med', 'todo', 1],
+    ['Join study group', null, null, 'low', 'done', null],
+  ];
+  tk.forEach(([title,courseId,due,priority,status,est]) => S.tasks.push({id:uid(), title, courseId, due, priority, status, est, notes:''}));
+  S.notes.push({
+    id:uid(), title:'COSC121 — Week 1 notes', icon:'💻', courseId:c1.id, updated:Date.now(),
+    blocks:[
+      {id:uid(), type:'h1', text:'Variables & types'},
+      {id:uid(), type:'text', text:'Java is statically typed — every variable has a declared type.'},
+      {id:uid(), type:'bullet', text:'int, double, boolean, char are primitives'},
+      {id:uid(), type:'bullet', text:'String is an object type'},
+      {id:uid(), type:'h2', text:'To do before the lab'},
+      {id:uid(), type:'todo', text:'Install BlueJ', checked:true},
+      {id:uid(), type:'todo', text:'Finish practice exercises 1–5', checked:false},
+    ]
+  });
+  S.notes.push({
+    id:uid(), title:'Flat & life admin', icon:'🏠', courseId:null, updated:Date.now(),
+    blocks:[
+      {id:uid(), type:'todo', text:'Sort bus card (Metrocard)', checked:false},
+      {id:uid(), type:'todo', text:'Book health centre enrolment', checked:false},
+      {id:uid(), type:'text', text:'Power bill is split 4 ways, due the 20th.'},
+    ]
+  });
+  S.grades[c1.id] = [
+    {id:uid(), name:'Lab 1', weight:5, score:9, outOf:10},
+    {id:uid(), name:'Test 1', weight:20, score:null, outOf:100},
+    {id:uid(), name:'Assignment 1', weight:15, score:null, outOf:100},
+    {id:uid(), name:'Final exam', weight:60, score:null, outOf:100},
+  ];
+  S.grades[c3.id] = [
+    {id:uid(), name:'Quiz 1', weight:10, score:null, outOf:20},
+    {id:uid(), name:'Project', weight:30, score:null, outOf:100},
+    {id:uid(), name:'Final exam', weight:60, score:null, outOf:100},
+  ];
+  save();
+}
+</script>
+<script>
+/* ============================================================ DASHBOARD */
+let focusTimer = {sec: 25*60, running:false, iv:null, mode:'focus'};
+
+function renderDashboard(){
+  const v = $('#view-dashboard');
+  const now = new Date();
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Mōrena' : hour < 17 ? 'Kia ora' : 'Good evening';
+  const name = S.settings.name ? ', ' + S.settings.name : '';
+  const dow = (now.getDay()+6)%7; // 0=Mon
+  const todayClasses = S.timetable.filter(t => t.day === dow).sort((a,b) => timeToMin(a.start)-timeToMin(b.start));
+  const upcoming = S.events
+    .filter(e => e.type !== 'uc' && e.date >= todayStr())
+    .sort((a,b) => a.date.localeCompare(b.date)).slice(0,6);
+  const ucNext = S.events.filter(e => e.type === 'uc' && e.date >= todayStr()).sort((a,b) => a.date.localeCompare(b.date)).slice(0,3);
+  const openTasks = S.tasks.filter(t => t.status !== 'done');
+  const overdue = openTasks.filter(t => t.due && t.due < todayStr()).length;
+  const si = semesterInfo();
+
+  const noData = S.courses.length === 0;
+
+  v.innerHTML = `
+  <div class="dash-hero">
+    <div>
+      <h2>${greet}${esc(name)} 👋</h2>
+      <p>${now.toLocaleDateString('en-NZ',{weekday:'long', day:'numeric', month:'long'})} · ${esc(si.label)}${si.detail? ' · '+esc(si.detail):''}</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      ${noData ? `<button class="btn btn-primary" onclick="loadDemoData();render('dashboard');toast('Demo data loaded — explore away!')">✨ Load demo data</button>`:''}
+      <button class="btn btn-ghost" onclick="show('settings')">+ Add course</button>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="card stat"><div class="num">${todayClasses.length}</div><div class="lbl">classes today</div></div>
+    <div class="card stat"><div class="num">${openTasks.length}</div><div class="lbl">open tasks${overdue? ` · <span style="color:var(--red)">${overdue} overdue</span>`:''}</div></div>
+    <div class="card stat"><div class="num">${upcoming.length ? daysUntil(upcoming[0].date) + 'd' : '—'}</div><div class="lbl">until next deadline</div></div>
+    <div class="card stat"><div class="num">${S.courses.length}</div><div class="lbl">courses</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card card-pad">
+      <h3>📅 Today's classes <span class="spacer"></span><button class="btn btn-ghost btn-sm" onclick="show('timetable')">Timetable →</button></h3>
+      ${todayClasses.length ? todayClasses.map(t => `
+        <div class="today-item">
+          <div class="today-time">${fmtTime(t.start)}–${fmtTime(t.end)}</div>
+          <div class="today-bar" style="background:${courseColor(t.courseId)}"></div>
+          <div style="min-width:0">
+            <b>${esc(courseCode(t.courseId))} ${esc(t.type)}</b>
+            <div style="font-size:12px;color:var(--text3)">📍 ${esc(t.location||'TBC')}</div>
+          </div>
+        </div>`).join('') : `<div class="empty"><div class="big">🌴</div>No classes today</div>`}
+    </div>
+    <div class="card card-pad">
+      <h3>⏰ Upcoming deadlines <span class="spacer"></span><button class="btn btn-ghost btn-sm" onclick="show('calendar')">Calendar →</button></h3>
+      ${upcoming.length ? upcoming.map(e => {
+        const d = daysUntil(e.date);
+        const cls = d < 0 ? 'background:var(--red-soft);color:var(--red)' : d <= 3 ? 'background:var(--amber-soft);color:var(--amber)' : 'background:var(--panel2);color:var(--text2)';
+        return `<div class="deadline-item">
+          <span class="dl-count" style="${cls}">${d === 0 ? 'today' : d === 1 ? '1 day' : d + ' days'}</span>
+          <span class="dot" style="background:${courseColor(e.courseId)}"></span>
+          <div style="min-width:0;flex:1"><b style="font-size:13px">${esc(e.title)}</b>
+          <div style="font-size:11.5px;color:var(--text3)">${courseCode(e.courseId) ? esc(courseCode(e.courseId)) + ' · ' : ''}${fmtDate(e.date,{weekday:'short',day:'numeric',month:'short'})}</div></div>
+        </div>`;
+      }).join('') : `<div class="empty"><div class="big">🎉</div>No deadlines on the horizon</div>`}
+    </div>
+    <div class="card card-pad">
+      <h3>🍅 Focus timer</h3>
+      <div class="focus-timer">
+        <div class="time" id="ft-display">25:00</div>
+        <div style="font-size:12px;color:var(--text3);font-weight:650" id="ft-mode">Focus session</div>
+        <div class="controls">
+          <button class="btn btn-primary btn-sm" id="ft-start" onclick="ftToggle()">Start</button>
+          <button class="btn btn-ghost btn-sm" onclick="ftSet(25,'focus')">25m</button>
+          <button class="btn btn-ghost btn-sm" onclick="ftSet(50,'focus')">50m</button>
+          <button class="btn btn-ghost btn-sm" onclick="ftSet(5,'break')">Break 5m</button>
+        </div>
+      </div>
+    </div>
+    <div class="card card-pad">
+      <h3>🎓 UC key dates <span class="spacer"></span><span style="font-size:11px;color:var(--text3);font-weight:600">canterbury.ac.nz</span></h3>
+      ${ucNext.map(e => `<div class="deadline-item">
+        <span class="dl-count" style="background:var(--uc-soft);color:var(--uc)">${fmtDate(e.date)}</span>
+        <div style="font-size:13px;font-weight:650">${esc(e.title)}</div>
+      </div>`).join('')}
+      <div class="quick-links" style="margin-top:12px">
+        <a href="https://learn.canterbury.ac.nz" target="_blank" rel="noopener">🖥️ LEARN (Moodle)</a>
+        <a href="https://www.canterbury.ac.nz/study/study-support-info/dates-and-timetables" target="_blank" rel="noopener">🗓️ UC dates &amp; timetables</a>
+        <a href="https://library.canterbury.ac.nz" target="_blank" rel="noopener">📚 UC Library</a>
+        <a href="https://www.ucsa.org.nz" target="_blank" rel="noopener">🎪 UCSA — events &amp; clubs</a>
+      </div>
+    </div>
+  </div>`;
+  ftPaint();
+}
+
+function ftSet(min, mode){ focusTimer.sec = min*60; focusTimer.mode = mode; if(focusTimer.running) ftToggle(); ftPaint(); }
+function ftToggle(){
+  focusTimer.running = !focusTimer.running;
+  const b = $('#ft-start'); if (b) b.textContent = focusTimer.running ? 'Pause' : 'Start';
+  clearInterval(focusTimer.iv);
+  if (focusTimer.running){
+    focusTimer.iv = setInterval(() => {
+      focusTimer.sec--;
+      if (focusTimer.sec <= 0){ focusTimer.sec = 0; ftToggle(); toast(focusTimer.mode === 'focus' ? '🍅 Session done — take a break!' : 'Break over — back to it!'); }
+      ftPaint();
+    }, 1000);
+  }
+}
+function ftPaint(){
+  const el = $('#ft-display'); if (!el) return;
+  const m = Math.floor(focusTimer.sec/60), s = focusTimer.sec%60;
+  el.textContent = m + ':' + String(s).padStart(2,'0');
+  const md = $('#ft-mode'); if (md) md.textContent = focusTimer.mode === 'focus' ? 'Focus session' : 'Break';
+}
+
+/* ============================================================ TIMETABLE */
+const TT_START = 8, TT_END = 21; // 8am–9pm
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+function renderTimetable(){
+  const v = $('#view-timetable');
+  const days = S.settings.weekend ? 7 : 5;
+  const dowToday = (new Date().getDay()+6)%7;
+  let cols = '';
+  for (let d = 0; d < days; d++){
+    const classes = S.timetable.filter(t => t.day === d);
+    let cells = '';
+    for (let h = TT_START; h < TT_END; h++) cells += `<div class="tt-cell" onclick="openClassModal(null,${d},${h})"></div>`;
+    const blocks = classes.map(t => {
+      const top = (timeToMin(t.start) - TT_START*60) / 60 * 52;
+      const height = Math.max(26,(timeToMin(t.end) - timeToMin(t.start)) / 60 * 52 - 4);
+      return `<div class="tt-class" style="top:${top}px;height:${height}px;background:${courseColor(t.courseId)}" onclick="event.stopPropagation();openClassModal('${t.id}')">
+        <b>${esc(courseCode(t.courseId))} · ${esc(t.type)}</b>
+        <span class="loc">${esc(t.location||'')}</span>
+      </div>`;
+    }).join('');
+    let nowLine = '';
+    if (d === dowToday){
+      const now = new Date(); const mins = now.getHours()*60 + now.getMinutes();
+      if (mins >= TT_START*60 && mins <= TT_END*60){
+        nowLine = `<div class="now-line" style="top:${(mins - TT_START*60)/60*52}px"></div>`;
+      }
+    }
+    cols += `<div class="tt-col">${cells}${blocks}${nowLine}</div>`;
+  }
+  let hours = '';
+  for (let h = TT_START; h < TT_END; h++) hours += `<div class="tt-cell" style="border:none"><div class="tt-hour">${h%12||12}${h<12?'am':'pm'}</div></div>`;
+  v.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openClassModal()">+ Add class</button>
+      <button class="btn btn-ghost" onclick="S.settings.weekend=!S.settings.weekend;save();renderTimetable()">${S.settings.weekend?'Hide':'Show'} weekend</button>
+      <span style="font-size:12px;color:var(--text3)">Tip: click any empty slot to add a class there.</span>
+    </div>
+    <div class="card tt-wrap">
+      <div class="tt-grid ${S.settings.weekend?'weekend':''}">
+        <div class="tt-head"></div>
+        ${DAY_NAMES.slice(0,days).map((n,i)=>`<div class="tt-head ${i===dowToday?'today':''}">${n}${i===dowToday?' ·':''}</div>`).join('')}
+        <div>${hours}</div>
+        ${cols}
+      </div>
+    </div>`;
+}
+
+function openClassModal(id, day, hour){
+  if (!S.courses.length){ toast('Add a course first (Courses & Settings)'); show('settings'); return; }
+  const t = id ? S.timetable.find(x => x.id === id) : null;
+  openModal(`
+    <h3>${t ? 'Edit class' : 'Add class'}</h3>
+    <label class="flabel">Course</label>
+    <select class="field" id="cm-course">${courseOptions(t?.courseId)}</select>
+    <div class="row">
+      <div><label class="flabel">Type</label>
+        <select class="field" id="cm-type">${['Lecture','Tutorial','Lab','Workshop','Studio','Other'].map(x=>`<option ${t?.type===x?'selected':''}>${x}</option>`).join('')}</select></div>
+      <div><label class="flabel">Day</label>
+        <select class="field" id="cm-day">${DAY_NAMES.map((n,i)=>`<option value="${i}" ${(t? t.day===i : day===i)?'selected':''}>${n}</option>`).join('')}</select></div>
+    </div>
+    <div class="row">
+      <div><label class="flabel">Start</label><input class="field" type="time" id="cm-start" value="${t? t.start : String(hour??9).padStart(2,'0')+':00'}"></div>
+      <div><label class="flabel">End</label><input class="field" type="time" id="cm-end" value="${t? t.end : String((hour??9)+1).padStart(2,'0')+':00'}"></div>
+    </div>
+    <label class="flabel">Location / room</label>
+    <input class="field" id="cm-loc" placeholder="e.g. Jack Erskine 031" value="${esc(t?.location||'')}">
+    <div class="actions">
+      ${t? `<button class="btn btn-danger" onclick="S.timetable=S.timetable.filter(x=>x.id!=='${t.id}');save();closeModal();renderTimetable()">Delete</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClass('${t?t.id:''}')">Save</button>
+    </div>`);
+}
+function saveClass(id){
+  const rec = {
+    courseId: $('#cm-course').value, type: $('#cm-type').value, day: +$('#cm-day').value,
+    start: $('#cm-start').value || '09:00', end: $('#cm-end').value || '10:00', location: $('#cm-loc').value.trim()
+  };
+  if (timeToMin(rec.end) <= timeToMin(rec.start)){ toast('End time must be after start'); return; }
+  if (id){ Object.assign(S.timetable.find(x => x.id === id), rec); }
+  else S.timetable.push({id:uid(), ...rec});
+  save(); closeModal(); renderTimetable();
+}
+
+/* ============================================================ CALENDAR */
+let calCursor = (() => { const d = new Date(); return {y:d.getFullYear(), m:d.getMonth()}; })();
+const EV_STYLE = {
+  deadline:{bg:'var(--amber-soft)', fg:'var(--amber)', label:'Deadline'},
+  exam:{bg:'var(--red-soft)', fg:'var(--red)', label:'Test / exam'},
+  personal:{bg:'var(--accent-soft)', fg:'var(--accent)', label:'Personal'},
+  uc:{bg:'var(--uc-soft)', fg:'var(--uc)', label:'UC key date'},
+};
+
+function renderCalendar(){
+  const v = $('#view-calendar');
+  const {y, m} = calCursor;
+  const first = new Date(y, m, 1);
+  const startDow = (first.getDay()+6)%7;
+  const dim = new Date(y, m+1, 0).getDate();
+  const dimPrev = new Date(y, m, 0).getDate();
+  const monthName = first.toLocaleDateString('en-NZ',{month:'long', year:'numeric'});
+  let cells = '';
+  for (let i = 0; i < 42; i++){
+    let d, mm = m, yy = y, other = false;
+    if (i < startDow){ d = dimPrev - startDow + 1 + i; mm = m-1; other = true; }
+    else if (i - startDow + 1 > dim){ d = i - startDow + 1 - dim; mm = m+1; other = true; }
+    else d = i - startDow + 1;
+    const dt = new Date(yy, mm, d);
+    const ds = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+    const evs = S.events.filter(e => e.date === ds).sort((a,b) => (a.type==='uc')-(b.type==='uc'));
+    const isToday = ds === todayStr();
+    cells += `<div class="cal-day ${other?'other':''} ${isToday?'today':''}" onclick="openEventModal(null,'${ds}')">
+      <div class="dnum">${d}</div>
+      ${evs.slice(0,3).map(e => {
+        const st = EV_STYLE[e.type] || EV_STYLE.personal;
+        return `<div class="cal-ev" style="background:${st.bg};color:${st.fg}" onclick="event.stopPropagation();openEventModal('${e.id}')" title="${esc(e.title)}">${esc(e.title)}</div>`;
+      }).join('')}
+      ${evs.length > 3 ? `<div class="cal-more">+${evs.length-3} more</div>` : ''}
+    </div>`;
+  }
+  v.innerHTML = `
+    <div class="cal-toolbar">
+      <button class="icon-btn" onclick="calNav(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <h3>${monthName}</h3>
+      <button class="icon-btn" onclick="calNav(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button class="btn btn-ghost btn-sm" onclick="calCursor={y:new Date().getFullYear(),m:new Date().getMonth()};renderCalendar()">Today</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-primary" onclick="openEventModal()">+ Add event</button>
+    </div>
+    <div class="cal-grid">
+      ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>
+    <div class="legend">${Object.values(EV_STYLE).map(s=>`<span><span class="dot" style="background:${s.fg}"></span>${s.label}</span>`).join('')}</div>`;
+}
+function calNav(d){ calCursor.m += d; if (calCursor.m < 0){ calCursor.m = 11; calCursor.y--; } if (calCursor.m > 11){ calCursor.m = 0; calCursor.y++; } renderCalendar(); }
+
+function openEventModal(id, dateStr){
+  const e = id ? S.events.find(x => x.id === id) : null;
+  if (e && e.locked){
+    openModal(`<h3>${esc(e.title)}</h3><p class="sub">${fmtDate(e.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · official UC key date (read-only)</p>
+      <div class="actions"><button class="btn btn-primary" onclick="closeModal()">OK</button></div>`);
+    return;
+  }
+  openModal(`
+    <h3>${e ? 'Edit event' : 'Add event'}</h3>
+    <label class="flabel">Title</label>
+    <input class="field" id="em-title" placeholder="e.g. Assignment 2 due" value="${esc(e?.title||'')}">
+    <div class="row">
+      <div><label class="flabel">Date</label><input class="field" type="date" id="em-date" value="${e? e.date : (dateStr || todayStr())}"></div>
+      <div><label class="flabel">Type</label>
+        <select class="field" id="em-type">
+          <option value="deadline" ${e?.type==='deadline'?'selected':''}>Deadline</option>
+          <option value="exam" ${e?.type==='exam'?'selected':''}>Test / exam</option>
+          <option value="personal" ${e?.type==='personal'?'selected':''}>Personal</option>
+        </select></div>
+    </div>
+    <label class="flabel">Course (optional)</label>
+    <select class="field" id="em-course">${courseOptions(e?.courseId, true)}</select>
+    <div class="actions">
+      ${e? `<button class="btn btn-danger" onclick="S.events=S.events.filter(x=>x.id!=='${e.id}');save();closeModal();renderCalendar()">Delete</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent('${e?e.id:''}')">Save</button>
+    </div>`);
+}
+function saveEvent(id){
+  const title = $('#em-title').value.trim();
+  if (!title){ toast('Give the event a title'); return; }
+  const rec = {title, date: $('#em-date').value || todayStr(), type: $('#em-type').value, courseId: $('#em-course').value || null};
+  if (id) Object.assign(S.events.find(x => x.id === id), rec);
+  else S.events.push({id:uid(), ...rec});
+  save(); closeModal(); if(currentView==='calendar') renderCalendar(); else render(currentView);
+}
+</script>
+<script>
+/* ============================================================ TASKS & PLANNER */
+const TASK_COLS = [
+  {key:'todo', label:'📋 To do'},
+  {key:'doing', label:'⚡ In progress'},
+  {key:'done', label:'✅ Done'},
+];
+function renderTasks(){
+  const v = $('#view-tasks');
+  const weekTasks = S.tasks.filter(t => t.status !== 'done' && t.due && daysUntil(t.due) <= 7 && daysUntil(t.due) >= 0);
+  const totalEst = weekTasks.reduce((a,t) => a + (+t.est || 0), 0);
+  v.innerHTML = `
+    <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openTaskModal()">+ Add task</button>
+      <span style="font-size:12.5px;color:var(--text2);font-weight:600">
+        ${weekTasks.length ? `📆 This week: <b>${weekTasks.length}</b> task${weekTasks.length>1?'s':''} due${totalEst? ` · ~<b>${totalEst}h</b> of study to plan`:''}` : 'Nothing due in the next 7 days.'}
+      </span>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost btn-sm" onclick="clearDone()">Clear done</button>
+    </div>
+    <div class="task-board">
+      ${TASK_COLS.map(col => {
+        const list = S.tasks.filter(t => t.status === col.key)
+          .sort((a,b) => (a.due||'9999').localeCompare(b.due||'9999') || prioRank(a)-prioRank(b));
+        return `<div>
+          <div class="task-col-head">${col.label} <span class="cnt">${list.length}</span></div>
+          ${list.map(taskCard).join('') || `<div class="empty" style="padding:20px">—</div>`}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+function prioRank(t){ return {high:0, med:1, low:2}[t.priority] ?? 1; }
+function taskCard(t){
+  const d = t.due ? daysUntil(t.due) : null;
+  const dueCls = d === null ? '' : d < 0 ? 'overdue' : d <= 2 ? 'soon' : '';
+  const dueTxt = t.due ? (d < 0 ? `⚠ ${Math.abs(d)}d overdue` : d === 0 ? 'due today' : `due ${fmtDate(t.due)}`) : '';
+  const next = t.status === 'todo' ? 'doing' : t.status === 'doing' ? 'done' : 'todo';
+  const arrow = t.status === 'done' ? '↩' : '→';
+  return `<div class="task-card" onclick="openTaskModal('${t.id}')">
+    <div class="t-title" style="${t.status==='done'?'text-decoration:line-through;color:var(--text3)':''}">${esc(t.title)}</div>
+    <div class="t-meta">
+      <span class="prio prio-${t.priority}">${t.priority}</span>
+      ${t.courseId? `<span class="chip" style="background:${courseColor(t.courseId)}22;color:${courseColor(t.courseId)}">${esc(courseCode(t.courseId))}</span>`:''}
+      ${dueTxt? `<span class="due-chip ${dueCls}">${dueTxt}</span>`:''}
+      ${t.est? `<span class="due-chip">~${t.est}h</span>`:''}
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost btn-sm" title="Move" onclick="event.stopPropagation();moveTask('${t.id}','${next}')">${arrow}</button>
+    </div>
+  </div>`;
+}
+function moveTask(id, status){ S.tasks.find(t => t.id === id).status = status; save(); renderTasks(); }
+function clearDone(){ S.tasks = S.tasks.filter(t => t.status !== 'done'); save(); renderTasks(); toast('Cleared completed tasks'); }
+
+function openTaskModal(id){
+  const t = id ? S.tasks.find(x => x.id === id) : null;
+  openModal(`
+    <h3>${t ? 'Edit task' : 'Add task'}</h3>
+    <label class="flabel">Task</label>
+    <input class="field" id="tm-title" placeholder="e.g. Finish stats assignment Q1–3" value="${esc(t?.title||'')}">
+    <div class="row">
+      <div><label class="flabel">Due (optional)</label><input class="field" type="date" id="tm-due" value="${t?.due||''}"></div>
+      <div><label class="flabel">Priority</label>
+        <select class="field" id="tm-prio">
+          <option value="high" ${t?.priority==='high'?'selected':''}>High</option>
+          <option value="med" ${!t||t.priority==='med'?'selected':''}>Medium</option>
+          <option value="low" ${t?.priority==='low'?'selected':''}>Low</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <div><label class="flabel">Course (optional)</label><select class="field" id="tm-course">${courseOptions(t?.courseId, true)}</select></div>
+      <div><label class="flabel">Est. hours</label><input class="field" type="number" min="0" step="0.5" id="tm-est" value="${t?.est||''}" placeholder="2"></div>
+    </div>
+    <label class="flabel">Status</label>
+    <select class="field" id="tm-status">
+      ${TASK_COLS.map(c=>`<option value="${c.key}" ${t?.status===c.key?'selected':''}>${c.label.replace(/^\S+ /,'')}</option>`).join('')}
+    </select>
+    <div class="actions">
+      ${t? `<button class="btn btn-danger" onclick="S.tasks=S.tasks.filter(x=>x.id!=='${t.id}');save();closeModal();renderTasks()">Delete</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask('${t?t.id:''}')">Save</button>
+    </div>`);
+}
+function saveTask(id){
+  const title = $('#tm-title').value.trim();
+  if (!title){ toast('Give the task a name'); return; }
+  const rec = {title, due: $('#tm-due').value || null, priority: $('#tm-prio').value,
+    courseId: $('#tm-course').value || null, est: +$('#tm-est').value || null, status: $('#tm-status').value};
+  if (id) Object.assign(S.tasks.find(x => x.id === id), rec);
+  else S.tasks.push({id:uid(), notes:'', ...rec});
+  save(); closeModal(); renderTasks();
+}
+
+/* ============================================================ NOTES */
+let activeNote = null;
+function renderNotes(){
+  const v = $('#view-notes');
+  if (!S.notes.length){
+    v.innerHTML = `<div class="card card-pad"><div class="empty"><div class="big">📝</div>
+      No notes yet. Create pages for each course, lecture summaries, flat admin — anything.<br><br>
+      <button class="btn btn-primary" onclick="newNote()">+ New page</button></div></div>`;
+    return;
+  }
+  if (!activeNote || !S.notes.find(n => n.id === activeNote)) activeNote = S.notes[0].id;
+  const note = S.notes.find(n => n.id === activeNote);
+  v.innerHTML = `
+    <div class="notes-layout">
+      <div class="card card-pad" style="padding:12px">
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px" onclick="newNote()">+ New page</button>
+        ${S.notes.slice().sort((a,b)=>b.updated-a.updated).map(n => `
+          <div class="note-list-item ${n.id===activeNote?'active':''}" onclick="activeNote='${n.id}';renderNotes()">
+            <span class="ic">${n.icon||'📄'}</span>
+            <div style="min-width:0;flex:1">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(n.title||'Untitled')}</div>
+              ${n.courseId? `<div style="font-size:10.5px;color:${courseColor(n.courseId)};font-weight:700">${esc(courseCode(n.courseId))}</div>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="card note-editor" id="note-editor">${noteEditorHTML(note)}</div>
+    </div>`;
+  bindNoteEditor(note);
+}
+function noteEditorHTML(n){
+  return `
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:2px">
+      <button class="icon-btn" style="font-size:22px" title="Change icon" onclick="cycleIcon('${n.id}')">${n.icon||'📄'}</button>
+      <input class="note-title-input" id="nt-title" value="${esc(n.title)}" placeholder="Untitled">
+      <select class="field" style="width:auto;max-width:150px;flex-shrink:0" id="nt-course">${courseOptions(n.courseId, true)}</select>
+      <button class="btn btn-danger btn-sm" onclick="deleteNote('${n.id}')">Delete</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--text3);margin-bottom:14px">Last edited ${new Date(n.updated).toLocaleString('en-NZ',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</div>
+    <div id="blocks">${n.blocks.map(blockHTML).join('')}</div>
+    <div class="block-add-bar">
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('text')">+ Text</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('h1')">+ Heading</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('h2')">+ Subheading</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('bullet')">+ Bullet</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('todo')">+ To-do</button>
+      <button class="btn btn-ghost btn-sm" onclick="addBlock('divider')">+ Divider</button>
+    </div>`;
+}
+function blockHTML(b){
+  if (b.type === 'divider') return `<div class="block block-divider" data-id="${b.id}"><span class="block-handle" title="Delete block" onclick="delBlock('${b.id}')">✕</span><hr></div>`;
+  const ph = {h1:'Heading', h2:'Subheading', text:'Type something…', bullet:'List item', todo:'To-do item'}[b.type];
+  const inner = `<div class="block-content" contenteditable="true" data-ph="${ph}" data-id="${b.id}">${esc(b.text)}</div>`;
+  if (b.type === 'todo') return `<div class="block block-todo ${b.checked?'done':''}" data-id="${b.id}">
+    <span class="block-handle" title="Delete block" onclick="delBlock('${b.id}')">✕</span>
+    <input type="checkbox" ${b.checked?'checked':''} onchange="toggleTodo('${b.id}',this.checked)">${inner}</div>`;
+  if (b.type === 'bullet') return `<div class="block block-bullet" data-id="${b.id}">
+    <span class="block-handle" title="Delete block" onclick="delBlock('${b.id}')">✕</span><span class="bullet-dot">•</span>${inner}</div>`;
+  return `<div class="block block-${b.type}" data-id="${b.id}">
+    <span class="block-handle" title="Delete block" onclick="delBlock('${b.id}')">✕</span>${inner}</div>`;
+}
+function bindNoteEditor(n){
+  const ed = $('#note-editor');
+  $('#nt-title').addEventListener('input', e => { n.title = e.target.value; n.updated = Date.now(); saveDebounced(); });
+  $('#nt-title').addEventListener('blur', () => renderNotes());
+  $('#nt-course').addEventListener('change', e => { n.courseId = e.target.value || null; n.updated = Date.now(); save(); renderNotes(); });
+  ed.addEventListener('input', e => {
+    const el = e.target.closest('.block-content'); if (!el) return;
+    const b = n.blocks.find(x => x.id === el.dataset.id); if (!b) return;
+    b.text = el.innerText.replace(/\n$/,''); n.updated = Date.now(); saveDebounced();
+  });
+  ed.addEventListener('keydown', e => {
+    const el = e.target.closest('.block-content'); if (!el) return;
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      const b = n.blocks.find(x => x.id === el.dataset.id);
+      const idx = n.blocks.indexOf(b);
+      const type = ['bullet','todo'].includes(b.type) ? b.type : 'text';
+      const nb = {id:uid(), type, text:'', checked:false};
+      n.blocks.splice(idx+1, 0, nb); n.updated = Date.now(); save();
+      refreshBlocks(n);
+      const nel = $(`.block-content[data-id="${nb.id}"]`); if (nel) nel.focus();
+    }
+    if (e.key === 'Backspace' && el.innerText.trim() === ''){
+      const b = n.blocks.find(x => x.id === el.dataset.id);
+      const idx = n.blocks.indexOf(b);
+      if (n.blocks.length > 1){
+        e.preventDefault();
+        n.blocks.splice(idx,1); n.updated = Date.now(); save();
+        refreshBlocks(n);
+        const prev = n.blocks[Math.max(0, idx-1)];
+        const pel = $(`.block-content[data-id="${prev.id}"]`);
+        if (pel){ pel.focus(); placeCaretEnd(pel); }
+      }
+    }
+  });
+}
+function refreshBlocks(n){ $('#blocks').innerHTML = n.blocks.map(blockHTML).join(''); }
+function placeCaretEnd(el){
+  const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+let saveDebounced = (() => { let t; return () => { clearTimeout(t); t = setTimeout(save, 400); }; })();
+function newNote(){
+  const n = {id:uid(), title:'', icon:'📄', courseId:null, updated:Date.now(), blocks:[{id:uid(), type:'text', text:'', checked:false}]};
+  S.notes.unshift(n); activeNote = n.id; save(); renderNotes();
+  const t = $('#nt-title'); if (t) t.focus();
+}
+function deleteNote(id){
+  openModal(`<h3>Delete this page?</h3><p class="sub">This can't be undone.</p>
+    <div class="actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-danger" onclick="S.notes=S.notes.filter(x=>x.id!=='${id}');activeNote=null;save();closeModal();renderNotes()">Delete page</button></div>`);
+}
+const NOTE_ICONS = ['📄','📝','💻','📐','🧪','📖','🎨','🏠','💡','🎯','🧠','⭐'];
+function cycleIcon(id){
+  const n = S.notes.find(x => x.id === id);
+  n.icon = NOTE_ICONS[(NOTE_ICONS.indexOf(n.icon||'📄')+1) % NOTE_ICONS.length];
+  n.updated = Date.now(); save(); renderNotes();
+}
+function toggleTodo(bid, checked){
+  const n = S.notes.find(x => x.id === activeNote);
+  const b = n.blocks.find(x => x.id === bid); b.checked = checked; n.updated = Date.now(); save();
+  const wrap = $(`.block[data-id="${bid}"]`); if (wrap) wrap.classList.toggle('done', checked);
+}
+function delBlock(bid){
+  const n = S.notes.find(x => x.id === activeNote);
+  n.blocks = n.blocks.filter(x => x.id !== bid);
+  if (!n.blocks.length) n.blocks.push({id:uid(), type:'text', text:'', checked:false});
+  n.updated = Date.now(); save(); refreshBlocks(n);
+}
+function addBlock(type){
+  const n = S.notes.find(x => x.id === activeNote);
+  const b = {id:uid(), type, text:'', checked:false};
+  n.blocks.push(b); n.updated = Date.now(); save(); refreshBlocks(n);
+  const el = $(`.block-content[data-id="${b.id}"]`); if (el) el.focus();
+}
+
+/* ============================================================ GRADES */
+const UC_GRADES = [
+  ['A+',90,9],['A',85,8],['A-',80,7],['B+',75,6],['B',70,5],['B-',65,4],
+  ['C+',60,3],['C',55,2],['C-',50,1],['D',40,0],['E',0,-1]
+];
+function letterFor(pct){ for (const [l,min] of UC_GRADES){ if (pct >= min) return l; } return 'E'; }
+function gpaFor(pct){ for (const [l,min,g] of UC_GRADES){ if (pct >= min) return g; } return -1; }
+
+function renderGrades(){
+  const v = $('#view-grades');
+  if (!S.courses.length){
+    v.innerHTML = `<div class="card card-pad"><div class="empty"><div class="big">🎯</div>Add your courses first, then track every assessment here.<br><br><button class="btn btn-primary" onclick="show('settings')">Go to Courses</button></div></div>`;
+    return;
+  }
+  // overall GPA across courses with any scored assessment
+  const courseSummaries = S.courses.map(c => {
+    const rows = S.grades[c.id] || [];
+    const scored = rows.filter(r => r.score !== null && r.score !== '' && r.outOf);
+    const wDone = scored.reduce((a,r) => a + (+r.weight||0), 0);
+    const earned = scored.reduce((a,r) => a + (+r.weight||0) * (r.score/r.outOf), 0);
+    const current = wDone ? earned/wDone*100 : null;
+    const totalW = rows.reduce((a,r) => a + (+r.weight||0), 0);
+    return {c, rows, scored, wDone, earned, current, totalW};
+  });
+  const withGrades = courseSummaries.filter(s => s.current !== null);
+  const gpa = withGrades.length ? (withGrades.reduce((a,s) => a + gpaFor(s.current), 0) / withGrades.length).toFixed(2) : null;
+
+  v.innerHTML = `
+    ${gpa !== null ? `<div class="card card-pad" style="margin-bottom:16px;display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+      <div><div class="grade-big">${gpa}</div><div style="font-size:12px;color:var(--text3);font-weight:650">estimated GPA (9-pt UC scale)</div></div>
+      <div style="font-size:12.5px;color:var(--text2);max-width:480px">Based on current weighted averages of ${withGrades.length} course${withGrades.length>1?'s':''} with marked work. Unmarked assessments aren't counted.</div>
+    </div>`:''}
+    ${courseSummaries.map(gradeCourseHTML).join('')}`;
+}
+function gradeCourseHTML(s){
+  const {c, rows, current, wDone, earned, totalW} = s;
+  // what's needed on remaining for an A- (80)
+  let needTxt = '';
+  if (totalW > 0 && wDone < totalW){
+    const remaining = totalW - wDone;
+    const needed = (80*totalW/100 - earned) / remaining * 100;
+    needTxt = needed <= 0 ? `A- already locked in 🎉` :
+      needed > 100 ? `A- no longer reachable — aim for ${letterFor((earned + remaining)/totalW*100)} max` :
+      `need <b>${needed.toFixed(0)}%</b> avg on remaining work for an A-`;
+  }
+  const warn = totalW > 0 && totalW !== 100 ? `<span class="chip" style="background:var(--amber-soft);color:var(--amber)">weights total ${totalW}%</span>` : '';
+  return `<div class="card card-pad grade-course">
+    <div class="grade-head">
+      <span class="course-badge" style="background:${c.color};width:38px;height:38px">${esc(c.code.slice(0,4))}</span>
+      <div style="flex:1;min-width:150px"><b style="font-size:15px">${esc(c.code)}</b><div style="font-size:12px;color:var(--text3)">${esc(c.name)}</div></div>
+      ${current !== null ? `<div style="text-align:right"><span class="grade-big" style="color:${c.color}">${current.toFixed(1)}%</span>
+        <span class="chip" style="background:${c.color}22;color:${c.color};font-size:13px">${letterFor(current)}</span></div>` : `<span style="color:var(--text3);font-size:12.5px">no marks yet</span>`}
+      ${warn}
+    </div>
+    ${current !== null ? `<div class="gbar"><div style="width:${Math.min(100,current)}%;background:${c.color}"></div></div>`:''}
+    ${needTxt ? `<div style="font-size:12.5px;color:var(--text2);margin-top:2px">🎯 ${needTxt}</div>`:''}
+    <table class="gtable">
+      <thead><tr><th style="width:38%">Assessment</th><th>Weight %</th><th>Score</th><th>Out of</th><th>%</th><th></th></tr></thead>
+      <tbody>
+        ${rows.map(r => {
+          const pct = (r.score !== null && r.score !== '' && r.outOf) ? (r.score/r.outOf*100) : null;
+          return `<tr>
+            <td><input class="field" style="width:100%" value="${esc(r.name)}" onchange="gEdit('${c.id}','${r.id}','name',this.value)"></td>
+            <td><input class="field" type="number" min="0" max="100" value="${r.weight??''}" onchange="gEdit('${c.id}','${r.id}','weight',this.value)"></td>
+            <td><input class="field" type="number" min="0" step="0.5" value="${r.score??''}" placeholder="—" onchange="gEdit('${c.id}','${r.id}','score',this.value)"></td>
+            <td><input class="field" type="number" min="1" value="${r.outOf??''}" onchange="gEdit('${c.id}','${r.id}','outOf',this.value)"></td>
+            <td style="font-weight:750;color:${pct===null?'var(--text3)':pct>=80?'var(--green)':pct>=50?'var(--text)':'var(--red)'}">${pct===null?'—':pct.toFixed(0)+'%'}</td>
+            <td><button class="icon-btn" style="width:26px;height:26px" title="Remove" onclick="gDel('${c.id}','${r.id}')">✕</button></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="gAdd('${c.id}')">+ Add assessment</button>
+  </div>`;
+}
+function gEdit(cid, rid, field, val){
+  const r = (S.grades[cid]||[]).find(x => x.id === rid); if (!r) return;
+  r[field] = field === 'name' ? val : (val === '' ? null : +val);
+  save(); renderGrades();
+}
+function gAdd(cid){
+  if (!S.grades[cid]) S.grades[cid] = [];
+  S.grades[cid].push({id:uid(), name:'New assessment', weight:10, score:null, outOf:100});
+  save(); renderGrades();
+}
+function gDel(cid, rid){ S.grades[cid] = S.grades[cid].filter(x => x.id !== rid); save(); renderGrades(); }
+</script>
+<script>
+/* ============================================================ CAMPUS MAP (UC Ilam — stylized, not to scale) */
+const POI_CATS = {
+  teaching:{label:'Teaching', color:'#4f46e5', ic:'🏛️'},
+  library:{label:'Libraries', color:'#0ea5a4', ic:'📚'},
+  food:{label:'Food & coffee', color:'#d97706', ic:'☕'},
+  services:{label:'Services', color:'#c026d3', ic:'🛟'},
+  social:{label:'Social & sport', color:'#16a34a', ic:'🎪'},
+  transport:{label:'Transport', color:'#64748b', ic:'🚌'},
+};
+/* Positions are stylized (not survey-accurate) but preserve real relative layout of the Ilam campus. */
+const POIS = [
+  {id:'enghub', cat:'teaching', x:555, y:96,  w:150, h:64, name:'Engineering Core & Precinct', desc:'Mechanical, Civil & Natural Resources, Electrical & Computer, and Chemical & Process wings around the Core. Home of first-year engineering.'},
+  {id:'jackerskine', cat:'teaching', x:560, y:180, w:110, h:52, name:'Jack Erskine', desc:'Computer Science & Maths/Stats. Computer labs and 24/7 workrooms for COSC students.'},
+  {id:'rutherford', cat:'teaching', x:330, y:150, w:130, h:60, name:'Ernest Rutherford', desc:'Regional Science and Innovation Centre — Physics, Chemistry, Biology labs and teaching spaces.'},
+  {id:'tinsley', cat:'teaching', x:350, y:232, w:100, h:42, name:'Beatrice Tinsley', desc:'Science departments and research offices in a striking timber building.'},
+  {id:'westtheatres', cat:'teaching', x:250, y:305, w:105, h:44, name:'A / Ōtākaro Theatres', desc:'Large first-year lecture theatres (A1–A3, Ōtākaro Lecture theatres).'},
+  {id:'jameshight', cat:'library', x:470, y:300, w:130, h:74, name:'Puaka-James Hight', desc:'The 11-storey Central Library tower. IT help, Academic Skills Centre, study floors — and the best view on campus from the top.'},
+  {id:'undercroft', cat:'food', x:470, y:388, w:130, h:36, name:'The Undercroft', desc:'Food hall under the library: sushi, kebabs, coffee, pharmacy and the copy centre. The central hub between classes.'},
+  {id:'matariki', cat:'services', x:395, y:330, w:60, h:60, name:'Matariki / Te Pātaka', desc:'Student services: enrolment, fees, scholarships, accommodation and Kaitoko student advisors.'},
+  {id:'ctheatres', cat:'teaching', x:620, y:310, w:80, h:46, name:'C Block Theatres', desc:'Central lecture theatres (C1–C3) — you will have a lot of lectures here.'},
+  {id:'rehua', cat:'teaching', x:710, y:250, w:95, h:60, name:'Rehua', desc:'Education, Health & Human Development, plus UC Business School teaching and the Centre for Entrepreneurship.'},
+  {id:'meremere', cat:'teaching', x:730, y:340, w:95, h:56, name:'Meremere', desc:'Business & Law — includes a simulated trading room and a mock courtroom.'},
+  {id:'teaomarama', cat:'teaching', x:640, y:420, w:100, h:48, name:'Te Ao Mārama', desc:'Aotahi — School of Māori and Indigenous Studies, and Māori research centres.'},
+  {id:'akatoki', cat:'social', x:755, y:430, w:80, h:40, name:'Te Whare Ākonga o Te Akatoki', desc:'Home of Te Akatoki, the UC Māori Students’ Association.'},
+  {id:'macmillan', cat:'library', x:470, y:470, w:110, h:46, name:'Macmillan Brown', desc:'Special collections library — NZ & Pacific research, archives and art collections.'},
+  {id:'arts', cat:'teaching', x:330, y:430, w:110, h:56, name:'North & South Arts', desc:'Arts lecture theatres and tutorial rooms around the Arts quad; Karl Popper & Locke buildings nearby.'},
+  {id:'finearts', cat:'teaching', x:300, y:520, w:110, h:44, name:'Fine Arts & Music', desc:'Ilam School of Fine Arts studios and the School of Music on Arts Rd.'},
+  {id:'health', cat:'services', x:600, y:490, w:100, h:44, name:'Whare Hauora Health Centre', desc:'Doctors, nurses and counselling — most appointments free for enrolled students. Book early in term.'},
+  {id:'ucsa', cat:'social', x:190, y:590, w:120, h:52, name:'Haere-roa (UCSA)', desc:'The students’ association: Ngaio Marsh Theatre, The Foundry bar, club spaces and student support.'},
+  {id:'recentre', cat:'social', x:690, y:560, w:120, h:56, name:'UC RecCentre', desc:'Gym (free membership for students), indoor courts, climbing wall and fitness classes.'},
+  {id:'bookshop', cat:'services', x:395, y:410, w:60, h:36, name:'University Bookshop', desc:'Textbooks, tech, stationery and UC merch, next to the central plaza.'},
+  {id:'epslib', cat:'library', x:680, y:150, w:24, h:24, name:'EPS Library', desc:'Engineering & Physical Sciences branch library, inside the Core.', dotOnly:true},
+  {id:'kirkwood', cat:'teaching', x:150, y:480, w:110, h:52, name:'Kirkwood Village', desc:'Timber tutorial village — small classes, language labs and bridging programmes.'},
+  {id:'bus_ilam', cat:'transport', x:238, y:250, w:26, h:26, name:'Bus stops — Ilam Rd', desc:'Metro stops by the science end. The Orbiter and city-bound routes stop along Ilam Rd — tag on with your Metrocard.', dotOnly:true},
+  {id:'bus_clyde', cat:'transport', x:862, y:300, w:26, h:26, name:'Bus stops — Clyde Rd', desc:'Metro stops on Clyde Rd, closest to Rehua, Meremere and the RecCentre.', dotOnly:true},
+  {id:'carpark', cat:'transport', x:560, y:640, w:26, h:26, name:'Student parking', desc:'Main student car parks off Kirkwood Ave and Forestry Rd — arrive before 9am on lecture days or you’ll be circling.', dotOnly:true},
+];
+let mapFilter = 'all';
+let mapSel = null;
+
+function renderMap(){
+  const v = $('#view-map');
+  const q = (v.dataset.q || '').toLowerCase();
+  const list = POIS.filter(p => (mapFilter === 'all' || p.cat === mapFilter) && (!q || (p.name + ' ' + p.desc).toLowerCase().includes(q)));
+  v.innerHTML = `
+    <div class="map-layout">
+      <div>
+        <div class="card card-pad map-dir" style="padding:14px">
+          <input class="field" id="map-q" placeholder="🔎 Search buildings, food, services…" value="${esc(v.dataset.q||'')}" style="margin-bottom:10px">
+          <div class="map-filters">
+            <span class="chip ${mapFilter==='all'?'on':''}" onclick="mapFilter='all';renderMap()">All</span>
+            ${Object.entries(POI_CATS).map(([k,c]) => `<span class="chip ${mapFilter===k?'on':''}" onclick="mapFilter='${k}';renderMap()">${c.ic} ${c.label}</span>`).join('')}
+          </div>
+          ${list.map(p => `
+            <div class="poi-item ${mapSel===p.id?'sel':''}" onclick="selectPoi('${p.id}')">
+              <span class="poi-ic" style="background:${POI_CATS[p.cat].color}22">${POI_CATS[p.cat].ic}</span>
+              <div><b>${esc(p.name)}</b><small>${esc(p.desc)}</small></div>
+            </div>`).join('') || '<div class="empty">No matches</div>'}
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:10px">${campusSVG()}</div>
+        <div class="card card-pad map-info" id="map-info">${mapInfoHTML()}</div>
+        <div class="card card-pad" style="margin-top:12px">
+          <h3>🚲 Getting around</h3>
+          <div style="font-size:13px;color:var(--text2);line-height:1.65">
+            The Ilam campus sits between <b>Clyde Rd</b> (east) and <b>Ilam Rd</b> (west), about 5&nbsp;km from the city centre, with the Ōkeover Stream running through the middle. Most lectures are within a 10-minute walk of the central library. Buses: the <b>Orbiter</b> and several Metro routes stop on Ilam Rd and Clyde Rd — a tertiary Metrocard makes fares cheaper. Cycling is the fastest way in from Riccarton/Church Corner, with bike stands outside every major building. Walking from Ilam or Sonoda halls takes about 10–15 minutes.
+            <br><span style="color:var(--text3);font-size:11.5px">Stylized map — relative positions only, not to scale. Check <a href="https://www.canterbury.ac.nz/about-uc/our-campus-and-environment/maps" target="_blank" rel="noopener" style="color:var(--accent)">UC's official interactive map</a> for room-level directions.</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  const qi = $('#map-q');
+  qi.addEventListener('input', e => { v.dataset.q = e.target.value; renderMap(); const q2 = $('#map-q'); q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); });
+}
+function selectPoi(id){ mapSel = (mapSel === id) ? null : id; renderMap(); }
+function mapInfoHTML(){
+  const p = POIS.find(x => x.id === mapSel);
+  if (!p) return `<div style="font-size:13px;color:var(--text3)">👆 Click a building on the map or in the directory to see what's inside.</div>`;
+  const c = POI_CATS[p.cat];
+  return `<div style="display:flex;gap:12px;align-items:flex-start">
+    <span class="poi-ic" style="background:${c.color}22;width:38px;height:38px;font-size:18px">${c.ic}</span>
+    <div><b style="font-size:15px">${esc(p.name)}</b>
+      <span class="chip" style="background:${c.color}22;color:${c.color};margin-left:6px">${c.label}</span>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">${esc(p.desc)}</div>
+    </div></div>`;
+}
+function campusSVG(){
+  const b = p => {
+    const c = POI_CATS[p.cat].color;
+    const hl = mapSel === p.id ? 'hl' : '';
+    if (p.dotOnly) return `<g class="bldg ${hl}" onclick="selectPoi('${p.id}')">
+      <circle cx="${p.x}" cy="${p.y}" r="13" fill="${c}" stroke="#fff" stroke-width="2.5" rx="0"/>
+      <rect x="${p.x-13}" y="${p.y-13}" width="26" height="26" fill="none" rx="13"/>
+      <text x="${p.x}" y="${p.y+4.5}" text-anchor="middle" font-size="12" fill="#fff">${POI_CATS[p.cat].ic}</text>
+    </g>`;
+    return `<g class="bldg ${hl}" onclick="selectPoi('${p.id}')">
+      <rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="9" fill="${c}" opacity="0.88" stroke="${c}" stroke-width="1.5"/>
+      <text x="${p.x + p.w/2}" y="${p.y + p.h/2 + 4}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff" style="pointer-events:none">${esc(shortName(p))}</text>
+    </g>`;
+  };
+  return `<svg id="campus-svg" viewBox="0 0 900 690" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylized map of UC Ilam campus">
+    <defs>
+      <pattern id="grass" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#dcefdb"/><circle cx="4" cy="4" r=".7" fill="#cfe6cd"/></pattern>
+    </defs>
+    <rect width="900" height="690" rx="12" fill="url(#grass)"/>
+    <!-- Ōkeover stream -->
+    <path d="M 130 690 C 200 560 240 500 300 430 C 360 360 430 250 470 190 C 500 145 540 80 560 0" stroke="#7fc4e8" stroke-width="16" fill="none" opacity=".8" stroke-linecap="round"/>
+    <text x="315" y="395" font-size="11" fill="#3d84ab" font-style="italic" transform="rotate(-48 315 395)">Ōkeover Stream</text>
+    <!-- Roads -->
+    <rect x="0" y="20" width="900" height="26" fill="#b9bfc9"/><text x="450" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="#5a6373">CREYKE RD</text>
+    <rect x="845" y="20" width="26" height="670" fill="#b9bfc9"/><text x="880" y="360" font-size="12" font-weight="700" fill="#5a6373" transform="rotate(90 880 360)">CLYDE RD</text>
+    <rect x="210" y="20" width="24" height="500" fill="#c6ccd5"/><text x="200" y="330" font-size="12" font-weight="700" fill="#5a6373" transform="rotate(90 200 330)">ILAM RD</text>
+    <path d="M 222 520 L 130 690" stroke="#c6ccd5" stroke-width="24" fill="none"/>
+    <text x="135" y="620" font-size="11" font-weight="700" fill="#5a6373" transform="rotate(-62 135 620)">KIRKWOOD AVE</text>
+    <path d="M 234 470 L 845 470" stroke="#d7dce3" stroke-width="14"/><text x="500" y="462" font-size="10" font-weight="600" fill="#7b8494">ARTS RD</text>
+    <path d="M 480 46 L 480 300" stroke="#d7dce3" stroke-width="14"/><text x="492" y="120" font-size="10" font-weight="600" fill="#7b8494" transform="rotate(90 492 120)">SCIENCE RD</text>
+    <path d="M 560 470 L 560 690" stroke="#d7dce3" stroke-width="14"/><text x="572" y="580" font-size="10" font-weight="600" fill="#7b8494" transform="rotate(90 572 580)">FORESTRY RD</text>
+    <!-- central quad -->
+    <ellipse cx="530" cy="255" rx="60" ry="28" fill="#c9e5c5"/>
+    <text x="530" y="259" text-anchor="middle" font-size="10" fill="#5f8a5a" font-style="italic">Ilam Green</text>
+    ${POIS.map(b).join('')}
+    <text x="16" y="676" font-size="10.5" fill="#8a93a3">Stylized — not to scale · N ↑</text>
+  </svg>`;
+}
+function shortName(p){
+  const short = {enghub:'Engineering Core', jameshight:'Puaka-James Hight', undercroft:'Undercroft 🍜', matariki:'Matariki', westtheatres:'A / Ōtākaro', ctheatres:'C Block', teaomarama:'Te Ao Mārama', akatoki:'Te Akatoki', macmillan:'Macmillan Brown', arts:'Arts', finearts:'Fine Arts · Music', health:'Whare Hauora ✚', ucsa:'Haere-roa (UCSA)', recentre:'RecCentre', bookshop:'UBS', kirkwood:'Kirkwood Village', rutherford:'Ernest Rutherford', tinsley:'Beatrice Tinsley', jackerskine:'Jack Erskine', rehua:'Rehua', meremere:'Meremere'};
+  return short[p.id] || p.name;
+}
+</script>
+<script>
+/* ============================================================ SETTINGS & COURSES */
+function renderSettings(){
+  const v = $('#view-settings');
+  v.innerHTML = `
+    <div class="grid2">
+      <div class="card card-pad">
+        <h3>🎓 My courses <span class="spacer"></span><button class="btn btn-primary btn-sm" onclick="openCourseModal()">+ Add course</button></h3>
+        ${S.courses.length ? S.courses.map(c => `
+          <div class="course-row">
+            <span class="course-badge" style="background:${c.color}">${esc(c.code.slice(0,4))}</span>
+            <div style="flex:1;min-width:0"><b>${esc(c.code)}</b><div style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="openCourseModal('${c.id}')">Edit</button>
+          </div>`).join('') : `<div class="empty">No courses yet — add the courses you're enrolled in. They power the timetable, tasks, grades and notes.</div>`}
+      </div>
+      <div>
+        <div class="card card-pad" style="margin-bottom:16px">
+          <h3>👤 Profile</h3>
+          <label class="flabel">Your name (for the dashboard greeting)</label>
+          <input class="field" id="set-name" value="${esc(S.settings.name)}" placeholder="e.g. Tony" onchange="S.settings.name=this.value.trim();save();toast('Saved')">
+        </div>
+        <div class="card card-pad" style="margin-bottom:16px">
+          <h3>💾 Your data</h3>
+          <p style="font-size:12.5px;color:var(--text2);margin-bottom:12px">
+            Everything is stored ${Store.persistent ? 'locally in this browser — nothing is sent to any server' : 'in memory only (this environment blocks browser storage) — export to keep your data'}.
+            Export a backup anytime, or move your data to another device.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="exportData()">⬇ Export backup</button>
+            <button class="btn btn-ghost btn-sm" onclick="$('#import-file').click()">⬆ Import backup</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+          </div>
+        </div>
+        <div class="card card-pad">
+          <h3>⚠️ Danger zone</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="loadDemoData();render('settings');toast('Demo data added')">Load demo data</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmReset()">Reset everything</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function openCourseModal(id){
+  const c = id ? S.courses.find(x => x.id === id) : null;
+  const sel = c ? c.color : COURSE_COLORS[S.courses.length % COURSE_COLORS.length];
+  openModal(`
+    <h3>${c ? 'Edit course' : 'Add course'}</h3>
+    <div class="row">
+      <div><label class="flabel">Course code</label><input class="field" id="crs-code" placeholder="COSC121" value="${esc(c?.code||'')}"></div>
+    </div>
+    <label class="flabel">Course name</label>
+    <input class="field" id="crs-name" placeholder="Introduction to Computer Programming" value="${esc(c?.name||'')}">
+    <label class="flabel">Colour</label>
+    <div class="color-swatches" id="crs-colors">
+      ${COURSE_COLORS.map(col => `<button class="swatch ${col===sel?'sel':''}" data-c="${col}" style="background:${col}" onclick="$$('#crs-colors .swatch').forEach(s=>s.classList.remove('sel'));this.classList.add('sel')"></button>`).join('')}
+    </div>
+    <div class="actions">
+      ${c ? `<button class="btn btn-danger" onclick="deleteCourse('${c.id}')">Delete</button>`:''}
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCourse('${c?c.id:''}')">Save</button>
+    </div>`);
+}
+function saveCourse(id){
+  const code = $('#crs-code').value.trim().toUpperCase();
+  const name = $('#crs-name').value.trim();
+  if (!code){ toast('Course code is required'); return; }
+  const color = $('#crs-colors .swatch.sel')?.dataset.c || COURSE_COLORS[0];
+  if (id) Object.assign(S.courses.find(x => x.id === id), {code, name, color});
+  else S.courses.push({id:uid(), code, name, color});
+  save(); closeModal(); renderSettings();
+}
+function deleteCourse(id){
+  closeModal();
+  openModal(`<h3>Delete this course?</h3><p class="sub">Its timetable entries, linked events and grades will be removed too. Tasks and notes will be unlinked but kept.</p>
+    <div class="actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-danger" onclick="doDeleteCourse('${id}')">Delete course</button></div>`);
+}
+function doDeleteCourse(id){
+  S.courses = S.courses.filter(c => c.id !== id);
+  S.timetable = S.timetable.filter(t => t.courseId !== id);
+  S.events = S.events.filter(e => e.courseId !== id || e.locked);
+  S.tasks.forEach(t => { if (t.courseId === id) t.courseId = null; });
+  S.notes.forEach(n => { if (n.courseId === id) n.courseId = null; });
+  delete S.grades[id];
+  save(); closeModal(); renderSettings();
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(S, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'unihub-backup-' + todayStr() + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Backup downloaded');
+}
+function importData(input){
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data.courses || !data.settings) throw new Error('bad file');
+      S = data; save(); applyTheme(); render(currentView); toast('Backup imported ✓');
+    } catch(e){ toast('That file doesn’t look like a UniHub backup'); }
+  };
+  r.readAsText(f); input.value = '';
+}
+function confirmReset(){
+  openModal(`<h3>Reset everything?</h3><p class="sub">All courses, notes, tasks, grades and events will be wiped. UC key dates will be re-added. Consider exporting a backup first.</p>
+    <div class="actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-danger" onclick="doReset()">Yes, wipe it</button></div>`);
+}
+function doReset(){
+  S = DEFAULT_STATE();
+  S.events = UC_DATES_2026.map(e => ({id:uid(), locked:true, ...e}));
+  save(); applyTheme(); closeModal(); render('settings'); toast('Fresh start ✨');
+}
+
+/* ============================================================ INIT */
+applyTheme();
+render('dashboard');
+setInterval(() => { if (currentView === 'timetable') renderTimetable(); }, 60000); // keep the "now" line moving
+
+/* PWA: offline support when served over https (no-op for file:// / previews) */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
